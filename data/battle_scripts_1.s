@@ -4161,6 +4161,7 @@ BattleScript_LocalBattleWonReward::
 BattleScript_PayDayMoneyAndPickUpItems::
 	givepaydaymoney
 	pickup
+	givedroppeditems @ 野生バトルアイテムドロップ機能追加
 	end2
 
 BattleScript_RivalBattleLost::
@@ -8269,3 +8270,10 @@ BattleScript_SilphScopeUnveiled::
 	waitmessage B_WAIT_TIME_LONG
 	end2
 
+@ 野生バトルアイテムドロップ機能追加
+BattleScript_ItemDropped::
+	printfromtable gItemDroppedStringIds
+	return
+
+End_Battle_From_Item_Drop::
+	end2

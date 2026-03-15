@@ -802,4 +802,8 @@ extern const u8 BattleScript_GhostGetOutGetOut[];
 extern const u8 BattleScript_TooScaredToMove[];
 extern const u8 BattleScript_SilphScopeUnveiled[];
 
+// 野生バトルアイテムドロップ機能追加
+extern const u8 BattleScript_ItemDropped[];
+extern const u8 End_Battle_From_Item_Drop[];
+
 #endif // GUARD_BATTLE_SCRIPTS_H

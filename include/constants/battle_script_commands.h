@@ -261,7 +261,7 @@ enum BattleScriptOpcode
     B_SCR_OP_UNUSED_27,
     B_SCR_OP_UNUSED_28,
     B_SCR_OP_UNUSED_29,
-    B_SCR_OP_UNUSED_30,
+    B_SCR_OP_VARIOUS, // 野生バトルアイテムドロップ機能追加
     B_SCR_OP_CALLNATIVE,
 };
 
@@ -353,6 +353,10 @@ enum BattleScriptOpcode
 
 // Cmd_jumpifcantswitch
 #define SWITCH_IGNORE_ESCAPE_PREVENTION   (1 << 7)
+
+// Cmd_various
+// 野生バトルアイテムドロップ機能追加
+#define VARIOUS_GIVE_DROPPED_ITEMS 0
 
 // Cmd_statbuffchange
 #define STAT_CHANGE_ALLOW_PTR               (1 << 0)   // If set, allow use of jumpptr. If not set and unable to raise/lower stats, jump to failInstr.
