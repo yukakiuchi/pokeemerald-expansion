@@ -4,6 +4,8 @@ const struct SpeciesInfo gSpeciesInfoGen3[] =
 #endif
 
 #if P_FAMILY_TREECKO
+    // ポケモンの情報を変えたい場合 [SPECIES_ポケモン名] でGrepするといい
+    // [] ←このかっこが重要！
     [SPECIES_TREECKO] =
     {
         .baseHP        = 40,
