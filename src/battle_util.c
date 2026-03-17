@@ -2146,6 +2146,7 @@ bool32 TryChangeBattleWeather(enum BattlerId battler, u32 battleWeatherId, enum 
     return TRUE;
 }
 
+// フィールド効果上書き処理
 bool32 TryChangeBattleTerrain(enum BattlerId battler, u32 statusFlag)
 {
     if (gBattleStruct->isSkyBattle)
@@ -2153,6 +2154,8 @@ bool32 TryChangeBattleTerrain(enum BattlerId battler, u32 statusFlag)
 
     if (!(gFieldStatuses & statusFlag))
     {
+        // 上書きする前に現在のフィールドによる状態異常付与を解除
+        ClearTerrainStatusEffects();
         gFieldStatuses &= ~STATUS_FIELD_TERRAIN_ANY;
         gFieldStatuses |= statusFlag;
         for (enum BattlerId i = 0; i < gBattlersCount; i++)
@@ -7380,6 +7383,7 @@ static inline uq4_12_t GetSameTypeAttackBonusModifier(struct BattleContext *ctx)
     return (ctx->abilityAtk == ABILITY_ADAPTABILITY) ? UQ_4_12(2.0) : UQ_4_12(1.5);
 }
 
+// 天候によるダメージ倍率の変更処理
 // Utility Umbrella holders take normal damage from what would be rain- and sun-weakened attacks.
 static uq4_12_t GetWeatherDamageModifier(struct BattleContext *ctx)
 {
@@ -10380,6 +10384,7 @@ bool32 CanMoveSkipAccuracyCalc(enum BattlerId battlerAtk, enum BattlerId battler
     return effect;
 }
 
+// バトル時の命中率と回避率の処理(メソッド名が紛らわしいけどどっちの処理もしてる)
 u32 GetTotalAccuracy(enum BattlerId battlerAtk, enum BattlerId battlerDef, enum Move move, enum Ability atkAbility, enum Ability defAbility, enum HoldEffect atkHoldEffect, enum HoldEffect defHoldEffect)
 {
     u32 calc, moveAcc;
@@ -10509,8 +10514,48 @@ u32 GetTotalAccuracy(enum BattlerId battlerAtk, enum BattlerId battlerDef, enum 
     if (B_AFFECTION_MECHANICS == TRUE && GetBattlerAffectionHearts(battlerDef) == AFFECTION_FIVE_HEARTS)
         calc = (calc * 90) / 100;
 
+    // フィールドや天候による命中率の変化　機能追加
+    // 天候が雨の時
+    if (HasWeatherEffect() && (gBattleWeather & B_WEATHER_RAIN))
+    {
+        // 水タイプへの攻撃が80%になる
+        if (IS_BATTLER_OF_TYPE(battlerDef, TYPE_WATER))
+            calc = (calc * 80) / 100;
+    }
+
+    // 天候が砂嵐の時
+    if (HasWeatherEffect() && (gBattleWeather & B_WEATHER_SANDSTORM))
+    {
+        // 攻撃側がじめんタイプなら命中率ダウンの効果を受けない
+        if (!IS_BATTLER_OF_TYPE(battlerAtk, TYPE_GROUND))
+        {
+            if (IS_BATTLER_OF_TYPE(battlerDef, TYPE_GROUND))
+                calc = (calc * 70) / 100; // じめんタイプへの攻撃は命中率70%になる
+            else
+                calc = (calc * 80) / 100; // じめんタイプ以外のタイプへの攻撃は80%になる
+        }
+    }
+
+    // 天候が霧の時
     if (HasWeatherEffect() && gBattleWeather & B_WEATHER_FOG)
-        calc = (calc * 60) / 100; // modified by 3/5
+    {   
+        // 虫タイプ以外は命中率が60%になる
+        if (!IS_BATTLER_OF_TYPE(battlerAtk, TYPE_BUG))
+            calc = (calc * 60) / 100; // modified by 3/5
+    }
+
+    // グラスフィールドの時
+    if (gFieldStatuses & STATUS_FIELD_GRASSY_TERRAIN)
+    {
+        // くさタイプは命中率ダウン効果を受けない
+        if (!IS_BATTLER_OF_TYPE(battlerAtk, TYPE_GRASS))
+        {
+            if (IS_BATTLER_OF_TYPE(battlerDef, TYPE_GRASS))
+                calc = (calc * 70) / 100; // 草タイプへの攻撃は命中率70%になる
+            else if (IS_BATTLER_OF_TYPE(battlerDef, TYPE_BUG))
+                calc = (calc * 80) / 100; // 虫タイプへの攻撃は命中率80%になる
+        }
+    }
 
     return calc;
 }

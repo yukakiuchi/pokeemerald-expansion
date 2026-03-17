@@ -7130,8 +7130,10 @@ static void RemoveAllWeather(void)
     gBattleWeather = 0;    // remove the weather
 }
 
+// 技やとくせいなどでフィールド効果消された時
 static void RemoveAllTerrains(void)
 {
+    // フィールド効果がある時
     switch (gFieldStatuses & STATUS_FIELD_TERRAIN_ANY)
     {
     case STATUS_FIELD_MISTY_TERRAIN:
@@ -7140,8 +7142,26 @@ static void RemoveAllTerrains(void)
     case STATUS_FIELD_GRASSY_TERRAIN:
         gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_TERRAIN_END_GRASSY;
         break;
-    case STATUS_FIELD_ELECTRIC_TERRAIN:
-        gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_TERRAIN_END_ELECTRIC;
+    case STATUS_FIELD_ELECTRIC_TERRAIN: // エレキフィールドの時
+        {
+            // メッセージを準備
+            gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_TERRAIN_END_ELECTRIC;
+
+            int i;
+            for (i = 0; i < gBattlersCount; i++)
+            {
+                // 場にいる対象のポケモンがまひ状態の時
+                if (gBattleMons[i].status1 & STATUS1_PARALYSIS)
+                {
+                    // まひ状態異常を解除
+                    gBattleMons[i].status1 &= ~STATUS1_PARALYSIS;
+
+                    // データの同期
+                    BtlController_EmitSetMonData(i, B_COMM_TO_CONTROLLER, REQUEST_STATUS_BATTLE, 0, sizeof(gBattleMons[i].status1), &gBattleMons[i].status1);
+                    MarkBattlerForControllerExec(i);
+                }
+            }
+        }
         break;
     case STATUS_FIELD_PSYCHIC_TERRAIN:
         gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_TERRAIN_END_PSYCHIC;
@@ -8578,6 +8598,7 @@ static void Cmd_tryinfatuating(void)
     }
 }
 
+// スクリプト側でアイコン表示を更新する処理
 static void Cmd_updatestatusicon(void)
 {
     CMD_ARGS(u8 battler);
@@ -8591,6 +8612,19 @@ static void Cmd_updatestatusicon(void)
         for (battler = gBattleControllerExecFlags; battler < gBattlersCount; battler++)
         {
             if (!(gAbsentBattlerFlags & (1u << battler)))
+            {
+                BtlController_EmitStatusIconUpdate(battler, B_COMM_TO_CONTROLLER, gBattleMons[battler].status1);
+                MarkBattlerForControllerExec(battler);
+            }
+        }
+        gBattlescriptCurrInstr = cmd->nextInstr;
+    }
+    else if (cmd->battler == BS_ALL_BATTLERS) // 場の全員を対象にするマクロ
+    {
+        for (battler = 0; battler < gBattlersCount; battler++) // ダブルバトルも考慮に入れてバトラーの数を確認
+        {
+            // 対象のバトラーが場にいて尚且つHPが0でない場合は対象にする
+            if (!(gAbsentBattlerFlags & (1u << battler)) && gBattleMons[battler].hp > 0)
             {
                 BtlController_EmitStatusIconUpdate(battler, B_COMM_TO_CONTROLLER, gBattleMons[battler].status1);
                 MarkBattlerForControllerExec(battler);
@@ -10265,11 +10299,28 @@ static void Cmd_trysetsnatch(void)
     }
 }
 
+// 交代時の処理
 static void Cmd_switchoutabilities(void)
 {
     CMD_ARGS(u8 battler);
 
     enum BattlerId battler = GetBattlerForBattleScript(cmd->battler);
+
+    // エレキフィールドの時
+    if ((gFieldStatuses & STATUS_FIELD_ELECTRIC_TERRAIN) 
+        && (gBattleMons[battler].status1 & STATUS1_PARALYSIS))
+    {
+        // 対象のまひ状態を解除
+        gBattleMons[battler].status1 &= ~STATUS1_PARALYSIS;
+
+        // 手持ちデータへの同期
+        BtlController_EmitSetMonData(battler, B_COMM_TO_CONTROLLER, REQUEST_STATUS_BATTLE,
+                                     1u << gBattleStruct->battlerPartyIndexes[battler],
+                                     sizeof(gBattleMons[battler].status1),
+                                     &gBattleMons[battler].status1);
+        MarkBattlerForControllerExec(battler);
+    }
+
     if (gBattleMons[battler].volatiles.neutralizingGas)
     {
         gBattleMons[battler].volatiles.neutralizingGas = FALSE;
@@ -11178,6 +11229,8 @@ static void Cmd_givecaughtmon(void)
     case GIVECAUGHTMON_GIVE_AND_SHOW_MSG:
     {
         struct Pokemon *caughtMon = GetBattlerMon(GetCatchingBattler());
+        // ゲットしたポケモンの状態異常は全回復 仕様変更
+        HealStatusConditions(caughtMon, STATUS1_ANY, GetCatchingBattler());
         if (B_RESTORE_HELD_BATTLE_ITEMS >= GEN_9)
         {
             u16 lostItem = gBattleStruct->itemLost[B_SIDE_OPPONENT][gBattlerPartyIndexes[GetCatchingBattler()]].originalItem;

@@ -130,6 +130,7 @@ static void HandleEndTurn_MonFled(void);
 static void HandleEndTurn_FinishBattle(void);
 static u32 Crc32B (const u8 *data, u32 size);
 static u32 GeneratePartyHash(const struct Trainer *trainer, u32 i);
+void ClearTerrainStatusEffects(void); // フィールド効果による状態異常を解除
 
 EWRAM_DATA u16 gBattle_BG0_X = 0;
 EWRAM_DATA u16 gBattle_BG0_Y = 0;
@@ -5361,6 +5362,37 @@ static void CheckChangingTurnOrderEffects(void)
     gBattleResources->battleScriptsStack->size = 0;
 }
 
+// フィールド効果による状態異常を解除
+void ClearTerrainStatusEffects(void)
+{
+    // エレキフィールドの時
+    if (gFieldStatuses & STATUS_FIELD_ELECTRIC_TERRAIN)
+    {
+        int i;
+        struct Pokemon *battler;
+
+        // 場にいる全ポケモン対象
+        for (i = 0; i < gBattlersCount; i++)
+        {
+            // まひ状態のポケモンの場合
+            if(gBattleMons[i].status1 & STATUS1_PARALYSIS)
+            {
+                // プレイヤー側の手持ちポケモンのデータを収納
+                if (GetBattlerSide(i) == B_SIDE_PLAYER)
+                {
+                    battler = &gPlayerParty[gBattlerPartyIndexes[i]];
+                }
+                else // 野生ポケモンのデータを収納
+                {
+                    battler = &gEnemyParty[gBattlerPartyIndexes[i]];
+                }
+                // 手持ちと戦闘用データを両方治す
+                HealStatusConditions(battler, STATUS1_PARALYSIS, i);
+            }
+        }
+    }
+}
+
 static void RunTurnActionsFunctions(void)
 {
     if (gBattleOutcome != 0)
@@ -5550,6 +5582,9 @@ static void HandleEndTurn_FinishBattle(void)
 {
     if (gCurrentActionFuncId == B_ACTION_TRY_FINISH || gCurrentActionFuncId == B_ACTION_FINISHED)
     {
+        // フィールドによる状態異常を解除
+        ClearTerrainStatusEffects();
+
         if (!(gBattleTypeFlags & (BATTLE_TYPE_LINK
                                   | BATTLE_TYPE_RECORDED_LINK
                                   | BATTLE_TYPE_FIRST_BATTLE

@@ -121,10 +121,37 @@ static bool32 HandleEndTurnWeatherDamage(enum BattlerId battler)
     case BATTLE_WEATHER_RAIN:
     case BATTLE_WEATHER_RAIN_PRIMAL:
     case BATTLE_WEATHER_RAIN_DOWNPOUR:
-        if (ability == ABILITY_DRY_SKIN || ability == ABILITY_RAIN_DISH)
+
+        s32 hpFraction = 0; // 回復・ダメージの合計値を溜める変数
+
+        // 1. 特性による増減
+        if (ability == ABILITY_RAIN_DISH)
+            hpFraction += 1; // +1/8
+        else if (ability == ABILITY_DRY_SKIN)
+            hpFraction += 1; // +1/8
+        
+        // 2. タイプによる増減
+        if (IS_BATTLER_OF_TYPE(battler, TYPE_GRASS)) // 草は雨で回復 +1/8
+            hpFraction += 1; 
+        
+        if (IS_BATTLER_OF_TYPE(battler, TYPE_FIRE))  // 炎は雨でダメージ -1/8
+            hpFraction -= 1;
+
+        // --- 最終実行 ---
+        if (hpFraction > 0 && !IsBattlerAtMaxHp(battler) && !gBattleMons[battler].volatiles.healBlock)
         {
-            if (AbilityBattleEffects(ABILITYEFFECT_ENDTURN, battler, ability, MOVE_NONE, TRUE))
-                effect = TRUE;
+            // 合計がプラスなら「回復」として処理
+            SetHealAmount(battler, (GetNonDynamaxMaxHP(battler) * hpFraction) / 8);
+            BattleScriptExecute(BattleScript_WeatherRainHeal); 
+            effect = TRUE;
+        }
+        else if (hpFraction < 0 && !IsAbilityAndRecord(battler, ability, ABILITY_MAGIC_GUARD))
+        {
+            // 合計がマイナスなら「ダメージ」として処理
+            u32 damage = (GetNonDynamaxMaxHP(battler) * (u32)(hpFraction * -1)) /8;
+            SetPassiveDamageAmount(battler, damage);
+            BattleScriptExecute(BattleScript_WeatherRainDamage); 
+            effect = TRUE;
         }
         break;
     case BATTLE_WEATHER_SUN:
@@ -359,6 +386,31 @@ static bool32 HandleEndTurnFirstEventBlock(enum BattlerId battler)
         {
             SetHealAmount(battler, GetNonDynamaxMaxHP(battler) / 16);
             BattleScriptExecute(BattleScript_GrassyTerrainHeals);
+            effect = TRUE;
+        }
+        gBattleStruct->eventState.endTurnBlock++;
+        break;
+
+    // エレキフィールドでまひ状態異常付与 機能追加 前半の処理
+    case FIRST_EVENT_BLOCK_ELECTRIC_TERRAIN_PARALYZE:
+
+        if (gFieldStatuses & STATUS_FIELD_ELECTRIC_TERRAIN      // 場がエレキフィールド
+        && IsBattlerAlive(battler)                              // 戦闘不能でない
+        && !IS_BATTLER_ANY_TYPE(battler, TYPE_ELECTRIC)         // 状態異常になっていない
+        && !(gBattleMons[battler].status1 & STATUS1_ANY)        // でんきタイプのポケモン以外
+        && IsBattlerGrounded(battler, GetBattlerAbility(battler), GetBattlerHoldEffect(battler))  // 地面に接してる
+        && CanBeParalyzed(battler, battler, GetBattlerAbility(battler)))    // 特性やもちものなどの判定
+        {
+            // 状態をまひに書き換え
+            gBattleMons[battler].status1 |= STATUS1_PARALYSIS;
+
+            // コントローラーへのデータ同期
+            BtlController_EmitSetMonData(battler, B_COMM_TO_CONTROLLER, REQUEST_STATUS_BATTLE, 0,
+                                         sizeof(gBattleMons[battler].status1), &gBattleMons[battler].status1);
+            MarkBattlerForControllerExec(battler);
+
+            // 演出用スクリプトの実行
+            BattleScriptExecute(BattleScript_ElectricTerrainParalyze);
             effect = TRUE;
         }
         gBattleStruct->eventState.endTurnBlock++;
@@ -1173,13 +1225,40 @@ static bool32 HandleEndTurnMagicRoom(enum BattlerId battler)
     return effect;
 }
 
+// フィールド効果の継続ターン終了による状態異常解除
 static bool32 EndTurnTerrain(u32 terrainFlag, u32 stringTableId)
 {
+    // 継続ターン終了時
     if (gFieldTimers.terrainTimer > 0 && --gFieldTimers.terrainTimer == 0)
     {
+        // フィールドフラグ解除
         gFieldStatuses &= ~terrainFlag;
+
+        // エレキフィールドの時
+        if (terrainFlag == STATUS_FIELD_ELECTRIC_TERRAIN)
+        {
+            int i;
+
+            // 戦闘にいるポケモンの数だけ繰り返す
+            for (i = 0; i < gBattlersCount; i++)
+            {
+                // 対象のポケモンがまひ状態の場合
+                if (gBattleMons[i].status1 & STATUS1_PARALYSIS)
+                {
+                    // まひをなおす
+                    gBattleMons[i].status1 &= ~STATUS1_PARALYSIS;
+
+                    // 内部データの同期
+                    BtlController_EmitSetMonData(i, B_COMM_TO_CONTROLLER, REQUEST_STATUS_BATTLE, 0, sizeof(gBattleMons[i].status1), &gBattleMons[i].status1);
+                    MarkBattlerForControllerExec(i);
+                }
+            }
+        }
+
         TryToRevertMimicryAndFlags();
         gBattleCommunication[MULTISTRING_CHOOSER] = stringTableId;
+
+        // ここでアニメーションなどの処理を実行
         BattleScriptExecute(BattleScript_TerrainEnds);
         return TRUE;
     }

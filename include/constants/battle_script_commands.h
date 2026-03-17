@@ -339,6 +339,7 @@ enum BattleScriptOpcode
 #define BS_OPPONENT2                14
 #define BS_ABILITY_BATTLER          15
 #define BS_ATTACKER_PARTNER         16
+#define BS_ALL_BATTLERS             17 // 全員一斉に対象
 
 // compare operands
 #define CMP_EQUAL               0

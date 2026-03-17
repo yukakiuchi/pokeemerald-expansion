@@ -517,6 +517,11 @@ extern const u8 BattleScript_BeforeSnoreMessage[];
 extern const u8 BattleScript_SkyDropTargetTooHeavy[];
 extern const u8 BattleScript_SkyDropFlyingType[];
 extern const u8 BattleScript_SkyDropNoTarget[];
+// 天候雨回復スクリプト 機能追加
+extern const u8 BattleScript_WeatherRainHeal[];
+extern const u8 BattleScript_WeatherRainDamage[];
+// エレキフィールドによるまひ状態異常付与スクリプト 機能追加
+extern const u8 BattleScript_ElectricTerrainParalyze[];
 
 // zmoves
 extern const u8 BattleScript_ZMoveActivateDamaging[];

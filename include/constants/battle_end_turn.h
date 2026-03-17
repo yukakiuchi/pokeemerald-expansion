@@ -65,6 +65,7 @@ enum FirstEventBlock
     FIRST_EVENT_BLOCK_SEA_OF_FIRE_DAMAGE,
     FIRST_EVENT_BLOCK_THRASH, // Thrash isn't handled here in vanilla but for now it is that best place for it.
     FIRST_EVENT_BLOCK_GRASSY_TERRAIN_HEAL,
+    FIRST_EVENT_BLOCK_ELECTRIC_TERRAIN_PARALYZE, // エレキフィールドでまひ状態異常付与 機能追加
     FIRST_EVENT_BLOCK_ABILITIES,
     FIRST_EVENT_BLOCK_HEAL_ITEMS,
 };

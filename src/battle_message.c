@@ -884,6 +884,13 @@ const u8 *const gBattleStringsTable[STRINGID_COUNT] =
     // 野生バトルアイテムドロップ機能追加
     [STRINGID_PKMNDROPPEDITEM]                      = sText_PkmnDroppedItem,
     [STRINGID_BAGISFULL]                            = sText_BagIsFull,
+
+    // 天候回復メッセージ    機能追加
+    [STRINGID_WeatherHealedPoke]                    = COMPOUND_STRING("{B_ATK_NAME_WITH_PREFIX} healed a bit!"),
+    // 天候ダメージメッセージ 機能追加
+    [STRINGID_WeatherDamagedPoke]                   = COMPOUND_STRING("{B_ATK_NAME_WITH_PREFIX} took damage a bit!"),
+    // エレキフィールドによるまひ状態異常付与メッセージ 機能追加
+    [STRINGID_ElectricTerrainParalyze]              = COMPOUND_STRING("Electric Terrain made {B_ATK_NAME_WITH_PREFIX} paralyzed!"),
 };
 
 const u16 gTrainerUsedItemStringIds[] =

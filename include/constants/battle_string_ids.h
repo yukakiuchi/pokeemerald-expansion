@@ -703,6 +703,11 @@ enum StringID
     // 野生バトルアイテムドロップ機能追加
     STRINGID_PKMNDROPPEDITEM,
     STRINGID_BAGISFULL,
+    // 天候雨回復メッセージ 機能追加
+    STRINGID_WeatherHealedPoke,
+    STRINGID_WeatherDamagedPoke,
+    // エレキフィールドによるまひ状態異常付与メッセージ定義 機能追加
+    STRINGID_ElectricTerrainParalyze,
     STRINGID_COUNT
 };
 

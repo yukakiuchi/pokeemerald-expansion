@@ -4545,6 +4545,8 @@ BattleScript_TerrainEnds_Ret::
 
 BattleScript_TerrainEnds::
 	call BattleScript_TerrainEnds_Ret
+	updatestatusicon BS_ALL_BATTLERS @場にいる全ポケモンのアイコン更新 機能追加
+	waitstate
 	end2
 
 BattleScript_MudSportEnds::
@@ -6396,6 +6398,9 @@ BattleScript_ActivateTerrainEffects:
 	resetterrainabilityflags
 	setbyte gBattlerAttacker, 0
 	sortbattlers
+	updatestatusicon BS_ALL_BATTLERS          @場にいる全ポケモンのアイコン更新 機能追加
+	waitstate
+
 BattleScript_ActivateTerrainSeed:
 	copyarraywithindex gBattlerTarget, gBattlersBySpeed, gBattlerAttacker, 1
 	tryterrainseed BS_TARGET, BattleScript_ActivateTerrainAbility
@@ -6434,6 +6439,39 @@ BattleScript_GrassySurgeActivates::
 	playanimation BS_SCRIPTING, B_ANIM_RESTORE_BG
 	call BattleScript_ActivateTerrainEffects
 	return
+
+@ エレキフィールドによるまひ状態異常付与スクリプト 機能追加
+BattleScript_ElectricTerrainParalyze::
+	pause B_WAIT_TIME_SHORT
+	waitmessage B_WAIT_TIME_LONG
+	statusanimation BS_ATTACKER                                            @ビリビリアニメーション
+	updatestatusicon BS_ATTACKER                                           @まひアイコン更新
+	waitstate
+	tryactivateitem BS_EFFECT_BATTLER, ACTIVATION_ON_STATUS_CHANGE         @道具や技で回復する処理
+	end2
+
+@ 天候雨回復スクリプト 機能追加
+BattleScript_WeatherRainHeal::
+	pause B_WAIT_TIME_SHORT
+	playanimation BS_ATTACKER, B_ANIM_SIMPLE_HEAL, NULL    @キラキラ回復アニメーション
+	healthbarupdate BS_ATTACKER, PASSIVE_HP_UPDATE         @HPバー更新
+	datahpupdate BS_ATTACKER, PASSIVE_HP_UPDATE            @内部HP更新
+	printstring STRINGID_WeatherHealedPoke                 @メッセージ表示
+	waitmessage B_WAIT_TIME_LONG
+	end2
+
+@ 天候雨ダメージスクリプト 機能追加
+BattleScript_WeatherRainDamage::
+	pause B_WAIT_TIME_SHORT
+	effectivenesssound                                     @ダメージの音
+	hitanimation BS_ATTACKER                               @ダメージ受けるアニメーション
+	waitstate
+	healthbarupdate BS_ATTACKER, PASSIVE_HP_UPDATE         @HPバー更新
+	datahpupdate BS_ATTACKER, PASSIVE_HP_UPDATE            @内部HP更新
+	printstring STRINGID_WeatherDamagedPoke                @メッセージ表示
+	waitmessage B_WAIT_TIME_LONG
+	tryfaintmon BS_ATTACKER                                @戦闘不能確認
+	end2
 
 BattleScript_PsychicSurgeActivates::
 	pause B_WAIT_TIME_SHORT
