@@ -6,7 +6,7 @@ from PIL import Image
 # 1. プロジェクトのルートパス (expandフォルダの場所)
 project_root = "/Users/yu/Desktop/expand/graphics/battle_anims" 
 # 2. 元にする画像
-source_png = "/Users/yu/Desktop/ccc/psychic_terrain.png"
+source_png = "/Users/yu/Desktop/ccc/sandstorm.png"
 # 3. 出力先 (デスクトップのフォルダ)
 output_dir = os.path.expanduser("~/Desktop/all_palettes_test/")
 

@@ -1,5 +1,6 @@
 #include "battle_anim_scripts.h"
 
+// 戦闘中の背景デザイン
 #define ENVIRONMENT_BACKGROUND(Background)             \
 {                                                      \
     .tileset = gBattleEnvironmentTiles_##Background,   \

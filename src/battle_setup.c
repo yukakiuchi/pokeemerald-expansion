@@ -706,7 +706,7 @@ static void CB2_EndMarowakBattle(void)
         SetMainCallback2(CB2_ReturnToFieldContinueScriptPlayMapMusic);
     }
 }
-
+// バトル中の背景設定
 enum BattleEnvironments BattleSetup_GetEnvironmentId(void)
 {
     u16 tileBehavior;
@@ -719,12 +719,18 @@ enum BattleEnvironments BattleSetup_GetEnvironmentId(void)
 
     tileBehavior = MapGridGetMetatileBehaviorAt(x, y);
 
+    // ルート104は砂浜がテーマ returnの順番の関係で処理はGrassの前
+    if (gSaveBlock1Ptr->location.mapGroup == MAP_GROUP(MAP_ROUTE104) && 
+            gSaveBlock1Ptr->location.mapNum == MAP_NUM(MAP_ROUTE104))
+        return BATTLE_ENVIRONMENT_SAND;
+
     if (MetatileBehavior_IsTallGrass(tileBehavior))
         return BATTLE_ENVIRONMENT_GRASS;
     if (MetatileBehavior_IsLongGrass(tileBehavior))
         return BATTLE_ENVIRONMENT_LONG_GRASS;
     if (MetatileBehavior_IsSandOrDeepSand(tileBehavior))
         return BATTLE_ENVIRONMENT_SAND;
+
 
     switch (gMapHeader.mapType)
     {
